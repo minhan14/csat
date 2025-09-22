@@ -8,7 +8,6 @@ WORKDIR /home/gradle/src
 COPY build.gradle.kts settings.gradle.kts ./
 
 # 2. Download dependencies. Docker will cache this layer.
-# If the build files haven't changed, this step will be skipped on future builds.
 RUN gradle dependencies --no-daemon
 
 # --- End Optimization ---
@@ -16,8 +15,8 @@ RUN gradle dependencies --no-daemon
 # 3. Copy the rest of the source code
 COPY src ./src
 
-# 4. Run the build. This will use the cached dependencies and be much faster.
-RUN gradle build --no-daemon
+# 4. Run the build, but EXCLUDE the test task to prevent connection errors
+RUN gradle build --no-daemon -x test
 
 
 # Stage 2: Create the final, lightweight production image
