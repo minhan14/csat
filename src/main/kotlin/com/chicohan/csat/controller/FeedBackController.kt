@@ -7,6 +7,8 @@ import com.chicohan.csat.repository.FeedbackRepo
 import com.chicohan.csat.repository.StaffRepo
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -21,8 +23,7 @@ data class FeedbackRequest(
     val comment: String?,
     val category: String?,
     val branchId: Long,
-    val counterId: Long,
-    val staffId: String
+    val counterId: Long
 )
 
 data class FeedbackResponse(
@@ -47,9 +48,10 @@ class FeedBackController(
 
     @PostMapping
     fun submitFeedback(
-        @RequestBody feedbackRequest: FeedbackRequest
+        @RequestBody feedbackRequest: FeedbackRequest,
+        @AuthenticationPrincipal userDetails: UserDetails
     ): ResponseEntity<FeedbackResponse>{
-        val staff = staffRepo.findStaffById(feedbackRequest.staffId).orElse(null) ?: return ResponseEntity.status(
+        val staff = staffRepo.findStaffById(userDetails.username).orElse(null) ?: return ResponseEntity.status(
             HttpStatus.UNAUTHORIZED).build()
         val branch = branchRepo.findById(feedbackRequest.branchId).orElse(null)
             ?: return ResponseEntity.badRequest().build()
@@ -60,7 +62,6 @@ class FeedBackController(
         if (feedbackRequest.rating !in 1..5) {
             return ResponseEntity.badRequest().build()
         }
-
         val feedback = Feedback(
             rating = feedbackRequest.rating,
             comment = feedbackRequest.comment,

@@ -20,7 +20,7 @@ class DatabaseSeeder(
     private val branchRepository: BranchRepo,
     private val counterRepository: CounterRepository,
     private val staffRepository: StaffRepo,
-    private val passwordEncoder: BCryptPasswordEncoder
+    private val passwordEncoder: PasswordEncoder
 ) : CommandLineRunner {
 
     override fun run(vararg args: String?) {
@@ -40,20 +40,19 @@ class DatabaseSeeder(
                 counterRepository.save(Counter(counterNumber = it, branch = uptownBranch))
             }
 
-            staffRepository.save(
-                Staff(
-                    id = "S001",
-                    name = "John Doe",
-                    password = passwordEncoder.encode("password123")
-                )
+            val staff1 = Staff(
+                id = "S001",
+                name = "John Smith",
+                password = passwordEncoder.encode("password123")
             )
-            staffRepository.save(
-                Staff(
-                    id = "S002",
-                    name = "Jane Smith",
-                    password = passwordEncoder.encode("password123")
-                )
+            val staff2 = Staff(
+                id = "S002",
+                name = "Jessi",
+                password = passwordEncoder.encode("password456")
             )
+
+            staffRepository.save(staff1)
+            staffRepository.save(staff2)
 
             println("Database seeding complete.")
         }

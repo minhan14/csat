@@ -1,8 +1,7 @@
-# This file is for running the multi-container application locally for development and testing.
+
 version: '3.8'
 
 services:
-  # The PostgreSQL Database Service
   db:
     image: postgres:14.1-alpine
     restart: always
@@ -22,19 +21,28 @@ services:
 
   # The CSAT Backend Application Service
   csat-backend:
-    # Build the image from the Dockerfile in the current directory
     build: .
     restart: always
     ports:
       - "8080:8080"
     environment:
-      # These environment variables will override application.properties
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/csat_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
     depends_on:
       db:
-        condition: service_healthy # Waits for the db to be healthy before starting
+        condition: service_healthy
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: always
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
 
 volumes:
   db_data:
