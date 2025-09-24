@@ -3,6 +3,8 @@ package com.chicohan.csat.security
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwt
 import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.io.Decoder
+import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.core.userdetails.UserDetails
@@ -13,13 +15,13 @@ import javax.crypto.SecretKey
 import kotlin.io.encoding.Base64
 
 @Component
-class JwtUtils {
-
-    @Value("\$jwt.secret")
-    private lateinit var secret: String
+class JwtUtils(
+    @Value("\${jwt.secret}") private val secret: String,
+    @Value("\${jwt.expiration}") private val expirationMs: Long
+) {
 
     private val secretKey: SecretKey by lazy {
-        Keys.hmacShaKeyFor(secret.toByteArray())
+        Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret))
     }
 
     fun extractUserName(token: String): String = extractClaim(token, Claims::getSubject)
@@ -32,7 +34,9 @@ class JwtUtils {
     }
 
     private fun extractAllClaims(token: String): Claims {
-        return Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token).body
+        return Jwts.parserBuilder().setSigningKey(secretKey)
+            .setAllowedClockSkewSeconds(30)
+            .build().parseClaimsJws(token).body
     }
 
     private fun isTokenExpired(token: String): Boolean = extractExpiration(token).before(Date())
@@ -45,7 +49,7 @@ class JwtUtils {
     private fun createToken(claims: Map<String, Any>, subject: String): String {
         return Jwts.builder().setClaims(claims).setSubject(subject)
             .setIssuedAt(Date(System.currentTimeMillis()))
-            .setExpiration(Date(System.currentTimeMillis() + 1000 * 60))
+            .setExpiration(Date(System.currentTimeMillis() + expirationMs))
             .signWith(secretKey)
             .compact()
     }

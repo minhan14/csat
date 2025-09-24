@@ -1,6 +1,7 @@
 package com.chicohan.csat
 
 import io.jsonwebtoken.SignatureAlgorithm
+import io.jsonwebtoken.io.Encoders
 import io.jsonwebtoken.security.Keys
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
