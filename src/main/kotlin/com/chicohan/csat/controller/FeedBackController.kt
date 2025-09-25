@@ -23,7 +23,8 @@ data class FeedbackRequest(
     val comment: String?,
     val category: String?,
     val branchId: Long,
-    val counterId: Long
+    val counterId: Long,
+    val staffId: String
 )
 
 data class FeedbackResponse(
@@ -51,7 +52,7 @@ class FeedBackController(
         @RequestBody feedbackRequest: FeedbackRequest,
         @AuthenticationPrincipal userDetails: UserDetails
     ): ResponseEntity<FeedbackResponse>{
-        val staff = staffRepo.findStaffById(userDetails.username).orElse(null) ?: return ResponseEntity.status(
+        val staff = staffRepo.findStaffById(feedbackRequest.staffId).orElse(null) ?: return ResponseEntity.status(
             HttpStatus.UNAUTHORIZED).build()
         val branch = branchRepo.findById(feedbackRequest.branchId).orElse(null)
             ?: return ResponseEntity.badRequest().build()

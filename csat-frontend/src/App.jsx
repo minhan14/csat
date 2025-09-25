@@ -17,7 +17,7 @@ const StatCard = ({ title, value, icon, color }) => (
 
 const Dashboard = ({ token, onLogout }) => {
     const [feedback, setFeedback] = useState([]);
-    const [branches, setBranches] = useState([]);
+    const [branches, setBranches] = useState([]); // Will now be populated from /api/branches
     const [selectedBranch, setSelectedBranch] = useState('');
     const [selectedRating, setSelectedRating] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -25,7 +25,30 @@ const Dashboard = ({ token, onLogout }) => {
 
     const API_URL = 'http://localhost:8080/api';
 
-    // Function to fetch feedback based on current filters
+    // NEW: useEffect to fetch the list of branches once on component mount
+    useEffect(() => {
+        const fetchBranches = async () => {
+            try {
+                const response = await fetch(`${API_URL}/branches`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        onLogout(); // Log out if token is invalid
+                    }
+                    throw new Error('Failed to fetch branches');
+                }
+                const data = await response.json();
+                setBranches(data);
+            } catch (err) {
+                setError(err.message);
+            }
+        };
+
+        fetchBranches();
+    }, [token, onLogout]); // Depends on token to make authenticated request
+
+    // This function now ONLY fetches feedback
     const fetchFeedback = async () => {
         setIsLoading(true);
         let url = `${API_URL}/feedback`;
@@ -50,11 +73,7 @@ const Dashboard = ({ token, onLogout }) => {
             }
             const data = await response.json();
             setFeedback(data);
-
-            const uniqueBranches = Array.from(new Set(data.map(item => JSON.stringify({id: item.branchId, name: item.branchName}))))
-                                        .map(item => JSON.parse(item));
-            setBranches(uniqueBranches);
-
+            // REMOVED: The old logic that derived branches from feedback is gone.
         } catch (err) {
             setError(err.message);
         } finally {
@@ -62,10 +81,12 @@ const Dashboard = ({ token, onLogout }) => {
         }
     };
 
+    // This useEffect now correctly re-fetches feedback whenever filters change.
     useEffect(() => {
         fetchFeedback();
     }, [selectedBranch, selectedRating, token]);
 
+    // This calculation logic remains the same
     const { overallScore, totalFeedback, ratingDistribution, chartData } = useMemo(() => {
         if (feedback.length === 0) {
             return { overallScore: 'N/A', totalFeedback: 0, ratingDistribution: {}, chartData: [] };
@@ -98,12 +119,15 @@ const Dashboard = ({ token, onLogout }) => {
                 </button>
             </header>
             <main>
+                {/* Stat cards remain the same */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                     <StatCard title="Overall CSAT Score" value={overallScore} color="bg-blue-100" icon={<span className="text-2xl">⭐</span>} />
                     <StatCard title="Total Feedback" value={totalFeedback} color="bg-green-100" icon={<span className="text-2xl">📊</span>} />
                     <StatCard title="Positive Ratings (4-5)" value={(ratingDistribution[4] || 0) + (ratingDistribution[5] || 0)} color="bg-yellow-100" icon={<span className="text-2xl">😊</span>} />
                 </div>
+
                 <div className="bg-white p-6 rounded-lg shadow-md">
+                    {/* Filter section now uses the dedicated 'branches' state */}
                     <div className="flex flex-col sm:flex-row gap-4 mb-6 pb-6 border-b">
                         <h2 className="text-xl font-semibold text-gray-700 self-center">Filter Feedback</h2>
                         <select
@@ -112,8 +136,9 @@ const Dashboard = ({ token, onLogout }) => {
                             className="p-2 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">All Branches</option>
+                            {/* The dropdown now correctly iterates over the state populated by the API call */}
                             {branches.map(branch => (
-                                <option key={branch.id} value={branch.id}>{branch.name}</option>
+                                <option key={branch.id} value={branch.id}>{branch.name} ({branch.regionName})</option>
                             ))}
                         </select>
                         <select
@@ -125,6 +150,8 @@ const Dashboard = ({ token, onLogout }) => {
                             {[5, 4, 3, 2, 1].map(r => <option key={r} value={r}>{r} Star{r > 1 ? 's' : ''}</option>)}
                         </select>
                     </div>
+
+                    {/* Rest of the component remains the same */}
                     {isLoading ? (
                         <div className="text-center p-10">Loading data...</div>
                     ) : error ? (
@@ -164,7 +191,7 @@ const Dashboard = ({ token, onLogout }) => {
                                                 <tr key={item.id} className="border-b hover:bg-gray-50">
                                                     <td className="py-2 px-4">{item.rating} ⭐</td>
                                                     <td className="py-2 px-4 max-w-sm truncate">{item.comment || '-'}</td>
-                                                    <td className="py-2 px-4">{item.staffName}</td>
+                                                    <td className="py-2 px-4">{item.staffId}</td>
                                                     <td className="py-2 px-4">{item.branchName}</td>
                                                     <td className="py-2 px-4">{new Date(item.timestamp).toLocaleString()}</td>
                                                 </tr>
@@ -180,6 +207,8 @@ const Dashboard = ({ token, onLogout }) => {
         </div>
     );
 };
+
+// --- Main App and Login Components (Unchanged) ---
 
 const LoginPage = ({ onLogin, setError, error }) => {
     const [staffId, setStaffId] = useState('');
@@ -198,7 +227,7 @@ const LoginPage = ({ onLogin, setError, error }) => {
             });
             if (response.ok) {
                 const data = await response.json();
-                onLogin(data.accessToken);
+                onLogin(data.token);
             } else {
                  const errorData = await response.json();
                  setError(errorData.message || 'Invalid staff ID or password');
@@ -211,10 +240,8 @@ const LoginPage = ({ onLogin, setError, error }) => {
     };
 
     return (
-
-
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
-            <div className="p-8 bg-white rounded-lg shadow-xl max-w-sm">
+            <div className="p-8 bg-white rounded-lg shadow-xl w-full max-w-sm">
                 <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Admin Portal Login</h2>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
@@ -254,7 +281,7 @@ const LoginPage = ({ onLogin, setError, error }) => {
 };
 
 function App() {
-    const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken'));
+    const [accessToken, setAccessToken] = useState(localStorage.getItem('token'));
     const [error, setError] = useState(null);
 
     const handleLogin = (newAccessToken) => {

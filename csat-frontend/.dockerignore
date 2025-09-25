@@ -1,0 +1,17 @@
+# This file tells Docker which files and folders to ignore
+# when building the image. This keeps our image small and secure.
+
+# Ignore the huge node_modules folder
+node_modules
+
+# Ignore the local development build cache
+dist
+.vite
+
+# Ignore log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore environment variables file (if you had one)
+.env

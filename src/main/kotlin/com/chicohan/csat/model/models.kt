@@ -1,15 +1,18 @@
 package com.chicohan.csat.model
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
 @Entity
+@JsonIgnoreProperties(value = ["hibernateLazyInitializer", "handler"])
 class Region(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
     val name: String
 )
 
+@JsonIgnoreProperties(value = ["hibernateLazyInitializer", "handler"])
 @Entity
 class Branch(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)

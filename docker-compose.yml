@@ -33,6 +33,21 @@ services:
       db:
         condition: service_healthy
 
+  frontend:
+    container_name: csat-frontend
+    # Tell Docker Compose to build the image from the Dockerfile
+    # located in the 'csat-frontend' directory.
+    build:
+      context: ./csat-frontend # Assumes your frontend is in a 'csat-frontend' folder
+    restart: always
+    ports:
+      # Map port 8081 on your machine to port 80 in the Nginx container
+      # to avoid conflicting with the backend on port 8080.
+      - "8081:80"
+    depends_on:
+      # This ensures the backend is running before the frontend starts
+      - csat-backend
+
   pgadmin:
     image: dpage/pgadmin4:latest
     restart: always

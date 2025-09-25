@@ -55,13 +55,10 @@ class SecurityConfig(
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
 
-        // ✅ Use patterns instead of strict origins (better with allowCredentials)
-        configuration.allowedOriginPatterns = listOf("http://localhost:5173")
+        configuration.allowedOriginPatterns = listOf("http://localhost:8081","http://192.168.1.108:8081")
 
-        // Allow common HTTP methods
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
 
-        // Allow all headers
         configuration.allowedHeaders = listOf("*")
 
         // ✅ Expose headers (important if frontend reads JWT from headers)
